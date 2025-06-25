@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, type Page } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
 
