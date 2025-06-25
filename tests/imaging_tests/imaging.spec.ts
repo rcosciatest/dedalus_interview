@@ -1,7 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
 
-// By default, tests run in parallel. This describe block should run sequentially
-// because the tests inside depend on each other and share a single page instance.
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Imaging Feature', () => {
