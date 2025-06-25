@@ -20,12 +20,7 @@ test.describe('Medical Image Viewer Tests', () => {
 
   test('Correctness of Rendering of Images', async ({ page }) => {
 
-    // Dismiss welcome popup if present
-    const welcomeButton = page.getByTestId('welcome-popup-accept-button');
-    if (await welcomeButton.isVisible()) {
-      await welcomeButton.click();
-      await expect(page.getByTestId('medical-image-viewport')).toBeVisible();
-    }
+    
     
     // Ensure viewport is present
     await expect(page.getByTestId('medical-image-viewport')).toBeVisible();
