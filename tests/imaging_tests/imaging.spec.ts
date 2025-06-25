@@ -1,220 +1,122 @@
 import { test, expect } from '@playwright/test';
+import { MedicalImageViewerPage } from '../../common/pom/MedicalImage.page';
 
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Medical Image Viewer Tests', () => {
+  let medicalImagePage: MedicalImageViewerPage;
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    
-    // Handle welcome dialog if present
-    const welcomeDialog = page.getByTestId('welcome-popup-overlay');
-    if (await welcomeDialog.isVisible()) {
-      await page.getByTestId('welcome-popup-accept-button').click();
-    }
-    
-    // Wait for initial load
-    await page.waitForLoadState('networkidle');
+    medicalImagePage = new MedicalImageViewerPage(page);
+    await medicalImagePage.navigate();
   });
 
-
-
-  test('Correctness of Rendering of Images', async ({ page }) => {
-
-
-    // Ensure viewport is present
-    await expect(page.getByTestId('medical-image-viewport')).toBeVisible();
+  test('Correctness of Rendering of Images', async () => {
+    await medicalImagePage.expectViewportVisible();
+    await medicalImagePage.expectImageVisible();
     
-    // Test Series 1 first (default series)
-    await expect(page.getByTestId('medical-image')).toBeVisible();
+    await medicalImagePage.expectImageSourceFormat(/\.jpeg$/);
+    await medicalImagePage.expectImageSourceContains('/1/');
+    await medicalImagePage.expectSliceInformation('1 / 7');
     
-    // Verify medical image is visible and has correct source
-    const imageElement = page.getByTestId('medical-image');
-    await expect(imageElement).toBeVisible();
-    
-    const imageSrcOne = await imageElement.getAttribute('src');
-    expect(imageSrcOne).toMatch(/\.jpeg$/);
-    expect(imageSrcOne).toContain('/1/');
-    
-    // Verify slice information for Series 1
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 7');
-    
-    // Test Series 2 (6 JPEG images)
-    await page.getByTestId('series-2-button').click();
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 6');
-    
-    // Verify image is visible and has correct format
-    await expect(page.getByTestId('medical-image')).toBeVisible();
-    const imageSrcTwo = await page.getByTestId('medical-image').getAttribute('src');
-    expect(imageSrcTwo).toMatch(/\.jpeg$/);
-    expect(imageSrcTwo).toContain('/2/');
+    await medicalImagePage.selectSeries(2);
+    await medicalImagePage.expectSliceInformation('1 / 6');
+    await medicalImagePage.expectImageVisible();
+    await medicalImagePage.expectImageSourceFormat(/\.jpeg$/);
+    await medicalImagePage.expectImageSourceContains('/2/');
   });
 
-  test('Navigation Between Images Using Mouse Scroll', async ({ page }) => {
-    // Ensure we're on Series 1
-    await page.getByTestId('series-1-button').click();
-    // Get initial slice information
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 7');
+  test('Navigation Between Images Using Mouse Scroll', async () => {
+    await medicalImagePage.selectSeries(1);
+    await medicalImagePage.expectSliceInformation('1 / 7');
     
-    // Scroll down to next image
-    await page.getByTestId('medical-image-viewport').hover();
-    await page.mouse.wheel(0, 100);
+    await medicalImagePage.scrollToNextImage();
+    await medicalImagePage.expectSliceInformation('2 / 7');
     
-    // Verify navigation to image 2
-    await expect(page.getByTestId('slice-information')).toHaveText('2 / 7');
+    await medicalImagePage.scrollToNextImage();
+    await medicalImagePage.expectSliceInformation('3 / 7');
     
-    // Scroll down multiple times
-    await page.mouse.wheel(0, 100);
-    await expect(page.getByTestId('slice-information')).toHaveText('3 / 7');
-    await page.mouse.wheel(0, 100);
-    await expect(page.getByTestId('slice-information')).toHaveText('4 / 7');
-    await page.mouse.wheel(0, 100);
-    await expect(page.getByTestId('slice-information')).toHaveText('5 / 7');
+    await medicalImagePage.scrollToNextImage();
+    await medicalImagePage.expectSliceInformation('4 / 7');
     
-    // Should be at image 5
-    await expect(page.getByTestId('slice-information')).toHaveText('5 / 7');
+    await medicalImagePage.scrollToNextImage();
+    await medicalImagePage.expectSliceInformation('5 / 7');
     
-    // Scroll up to previous image
-    await page.mouse.wheel(0, -100);
-    await expect(page.getByTestId('slice-information')).toHaveText('4 / 7');
+    await medicalImagePage.scrollToPreviousImage();
+    await medicalImagePage.expectSliceInformation('4 / 7');
     
-    // Test boundary conditions - scroll to last image
-    await page.mouse.wheel(0, 100);
-    await expect(page.getByTestId('slice-information')).toHaveText('5 / 7');
-    await page.mouse.wheel(0, 100);
-    await expect(page.getByTestId('slice-information')).toHaveText('6 / 7');
-    await page.mouse.wheel(0, 100);
-    await expect(page.getByTestId('slice-information')).toHaveText('7 / 7');
-    // Additional scrolls should stay at last image
-    await page.mouse.wheel(0, 100);
-    await page.mouse.wheel(0, 100);
+    await medicalImagePage.scrollToLastImage(7);
+    await medicalImagePage.expectSliceInformation('7 / 7');
     
-    // Should stay at last image (7)
-    await expect(page.getByTestId('slice-information')).toHaveText('7 / 7');
-    
-    // Scroll back to first image
-    for (let i = 0; i < 10; i++) {
-      await page.mouse.wheel(0, -100);
-    }
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 7');
-    
-    // Should stay at first image (1)
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 7');
+    await medicalImagePage.scrollToFirstImage();
+    await medicalImagePage.expectSliceInformation('1 / 7');
   });
 
-  test('Switch of Series', async ({ page }) => {
-
-    // Navigate to image 3 in Series 1
-    const viewport = page.getByTestId('medical-image-viewport');
-    await viewport.hover();
-    await page.mouse.wheel(0, 100); // Image 2
-    await page.mouse.wheel(0, 100); // Image 3
-    await expect(page.getByTestId('slice-information')).toHaveText('3 / 7');
-    // Verify we're on image 3
+  test('Switch of Series', async () => {
+    await medicalImagePage.navigateToSlice(3);
+    await medicalImagePage.expectSliceInformation('3 / 7');
     
-    // Switch to Series 2
-    await page.getByTestId('series-2-button').click();
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 6');// Should reset to 1
+    await medicalImagePage.selectSeries(2);
+    await medicalImagePage.expectSliceInformation('1 / 6');
+    await medicalImagePage.expectImageSourceContains('/2/');
     
+    await medicalImagePage.navigateToSlice(4);
+    await medicalImagePage.expectSliceInformation('4 / 6');
     
-    // Verify image source changed
-    const imageSrc = await page.getByTestId('medical-image').getAttribute('src');
-    expect(imageSrc).toContain('/2/');
-    
-    // Navigate to image 4 in Series 2
-    await page.getByTestId('medical-image-viewport').hover();
-    await page.mouse.wheel(0, 100); // Image 2
-    await expect(page.getByTestId('slice-information')).toHaveText('2 / 6');
-    await page.mouse.wheel(0, 100); // Image 3
-    await expect(page.getByTestId('slice-information')).toHaveText('3 / 6');
-    await page.mouse.wheel(0, 100); // Image 4
-    await expect(page.getByTestId('slice-information')).toHaveText('4 / 6');
-    
-    // Switch back to Series 1
-    await page.getByTestId('series-1-button').click();
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 7');
-    
-    // Verify image source changed back
-    const finalImageSrc = await page.getByTestId('medical-image').getAttribute('src');
-    expect(finalImageSrc).toContain('/1/');
+    await medicalImagePage.selectSeries(1);
+    await medicalImagePage.expectSliceInformation('1 / 7');
+    await medicalImagePage.expectImageSourceContains('/1/');
   });
 
-  test('Verify Patient Information Overlay Displays Correct Data', async ({ page }) => {
-    // Verify patient information is visible
-    const patientOverlay = page.getByTestId('patient-information-overlay');
-    await expect(patientOverlay).toBeVisible();
+  test('Verify Patient Information Overlay Displays Correct Data', async () => {
+    await medicalImagePage.expectPatientInformationVisible();
     
-    // Check positioning (bottom-left)
-    const overlayBox = await patientOverlay.boundingBox();
+    const overlayBox = await medicalImagePage.getOverlayBoundingBox();
     expect(overlayBox).toBeTruthy();
     
-    // Verify patient name and ID are displayed
-    await expect(page.getByTestId('patient-name')).toBeVisible();
-    await expect(page.getByTestId('patient-id')).toBeVisible();
+    await medicalImagePage.expectPatientInformationContains('John Doe', 'P001234567');
     
-    // Get the patient information text
-    const patientName = await page.getByTestId('patient-name').textContent();
-    const patientId = await page.getByTestId('patient-id').textContent();
+    const patientName = await medicalImagePage.getPatientName();
+    const patientId = await medicalImagePage.getPatientId();
     
-    expect(patientName).toContain('John Doe');
-    expect(patientId).toContain('P001234567');
+    await medicalImagePage.scrollToNextImage();
+    await medicalImagePage.expectSliceInformation('2 / 7');
+    await medicalImagePage.expectPatientInformation(patientName!, patientId!);
     
+    await medicalImagePage.selectSeries(2);
+    await medicalImagePage.expectSliceInformation('1 / 6');
+    await medicalImagePage.expectPatientInformationVisible();
+    await medicalImagePage.expectPatientInformation(patientName!, patientId!);
     
-    // Test persistence across image navigation
-    const viewport = page.getByTestId('medical-image-viewport');
-    await viewport.hover();
-    await page.mouse.wheel(0, 100); // Navigate to next image
-    await expect(page.getByTestId('slice-information')).toHaveText('2 / 7');
-    
-    // Patient info should persist
-    await expect(page.getByTestId('patient-name')).toHaveText(patientName!);
-    await expect(page.getByTestId('patient-id')).toHaveText(patientId!);
-    
-    // Test persistence across series switch
-    await page.getByTestId('series-2-button').click();
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 6');
-    
-    // Patient info should still be visible and correct
-    await expect(patientOverlay).toBeVisible();
-    await expect(page.getByTestId('patient-name')).toHaveText(patientName!);
-    await expect(page.getByTestId('patient-id')).toHaveText(patientId!);
-    
-    // Verify overlay positioning remains consistent
-    const newOverlayBox = await patientOverlay.boundingBox();
+    const newOverlayBox = await medicalImagePage.getOverlayBoundingBox();
     expect(newOverlayBox).toBeTruthy();
     expect(newOverlayBox!.x).toBeCloseTo(overlayBox!.x, 10);
     expect(newOverlayBox!.y).toBeCloseTo(overlayBox!.y, 10);
   });
 
-  test('Performance and Visual Validation', async ({ page }) => {
-    // Test image loading performance
+  test('Performance and Visual Validation', async () => {
     const startTime = Date.now();
     
-    await page.getByTestId('series-1-button').click();
-    await expect(page.getByTestId('medical-image')).toBeVisible();
+    await medicalImagePage.selectSeries(1);
+    await medicalImagePage.expectImageVisible();
     
     const loadTime = Date.now() - startTime;
-    expect(loadTime).toBeLessThan(3000); // Should load within 3 seconds
+    expect(loadTime).toBeLessThan(3000);
     
-    // Test rapid navigation performance
     const rapidNavStart = Date.now();
-    const viewport = page.getByTestId('medical-image-viewport');
-    await viewport.hover();
     
-    // Rapidly navigate through images
     for (let i = 2; i <= 7; i++) {
-      await page.mouse.wheel(0, 100);
-      await expect(page.getByTestId('slice-information')).toHaveText(`${i} / 7`);
+      await medicalImagePage.scrollToNextImage();
+      await medicalImagePage.expectSliceInformation(`${i} / 7`);
     }
     
     const rapidNavTime = Date.now() - rapidNavStart;
-    expect(rapidNavTime).toBeLessThan(8000); // Should complete within 8 seconds
+    expect(rapidNavTime).toBeLessThan(8000);
     
-    // Verify final state
-    await page.getByTestId('series-1-button').click();
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 7');
-    await expect(page.getByTestId('medical-image')).toBeVisible();
+    await medicalImagePage.selectSeries(1);
+    await medicalImagePage.expectSliceInformation('1 / 7');
+    await medicalImagePage.expectImageVisible();
     
-    // Performance metrics logging
     console.log(`Initial load time: ${loadTime}ms`);
     console.log(`Rapid navigation time: ${rapidNavTime}ms`);
   });
