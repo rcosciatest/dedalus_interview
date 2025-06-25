@@ -135,4 +135,49 @@ export class MedicalImageViewerPage {
     expect(patientName).toContain(nameContains);
     expect(patientId).toContain(idContains);
   }
+
+  async getCurrentImageData(): Promise<any> {
+    const sliceText = await this.sliceInformation.textContent();
+    const imageSource = await this.getImageSource();
+    const patientName = await this.getPatientName();
+    const patientId = await this.getPatientId();
+    
+    if (sliceText) {
+      const [current, total] = sliceText.split(' / ').map(n => parseInt(n));
+      const series = total === 7 ? 1 : 2;
+      
+      return {
+        imageIndex: current,
+        series: series,
+        imageSource: imageSource,
+        patientInfo: {
+          name: patientName,
+          id: patientId
+        }
+      };
+    }
+    return null;
+  }
+
+  async expectImageData(expectedSeries: number, expectedImageIndex: number) {
+    const totalSlices = expectedSeries === 1 ? 7 : 6;
+    await this.expectSliceInformation(`${expectedImageIndex} / ${totalSlices}`);
+  }
+
+  async expectPatientInfoFromEvent(expectedName: string, expectedId: string) {
+    await this.expectPatientInformationContains(expectedName, expectedId);
+  }
+
+  async expectImageSourceFromEvent(expectedPath: string) {
+    await this.expectImageSourceContains(expectedPath);
+  }
+
+  async expectLoadDelayWithinRange(maxDelay: number) {
+    const startTime = Date.now();
+    await this.page.waitForLoadState('networkidle');
+    const endTime = Date.now();
+    const loadDelay = endTime - startTime;
+
+    expect(loadDelay).toBeLessThanOrEqual(maxDelay);
+  }
 }
