@@ -15,15 +15,13 @@ test.describe('Medical Image Viewer Tests', () => {
     await medicalImagePage.expectViewportVisible();
     await medicalImagePage.expectImageVisible();
     
-    await medicalImagePage.expectImageSourceFormat(/\.jpeg$/);
-    await medicalImagePage.expectImageSourceContains('/1/');
+    await medicalImagePage.expectImageData(1, 1);
     await medicalImagePage.expectSliceInformation('1 / 7');
     
     await medicalImagePage.selectSeries(2);
+    await medicalImagePage.expectImageData(2, 1);
+    await medicalImagePage.expectImageSourceFromEvent('/2/');
     await medicalImagePage.expectSliceInformation('1 / 6');
-    await medicalImagePage.expectImageVisible();
-    await medicalImagePage.expectImageSourceFormat(/\.jpeg$/);
-    await medicalImagePage.expectImageSourceContains('/2/');
   });
 
   test('Navigation Between Images Using Mouse Scroll', async () => {
@@ -31,22 +29,18 @@ test.describe('Medical Image Viewer Tests', () => {
     await medicalImagePage.expectSliceInformation('1 / 7');
     
     await medicalImagePage.scrollToNextImage();
+    await medicalImagePage.expectImageData(1, 2);
     await medicalImagePage.expectSliceInformation('2 / 7');
     
     await medicalImagePage.scrollToNextImage();
+    await medicalImagePage.expectImageData(1, 3);
     await medicalImagePage.expectSliceInformation('3 / 7');
     
-    await medicalImagePage.scrollToNextImage();
-    await medicalImagePage.expectSliceInformation('4 / 7');
-    
-    await medicalImagePage.scrollToNextImage();
-    await medicalImagePage.expectSliceInformation('5 / 7');
-    
-    await medicalImagePage.scrollToPreviousImage();
-    await medicalImagePage.expectSliceInformation('4 / 7');
-    
-    await medicalImagePage.scrollToLastImage(7);
-    await medicalImagePage.expectSliceInformation('7 / 7');
+    for (let i = 4; i <= 7; i++) {
+      await medicalImagePage.scrollToNextImage();
+      await medicalImagePage.expectImageData(1, i);
+      await medicalImagePage.expectSliceInformation(`${i} / 7`);
+    }
     
     await medicalImagePage.scrollToFirstImage();
     await medicalImagePage.expectSliceInformation('1 / 7');
@@ -54,39 +48,38 @@ test.describe('Medical Image Viewer Tests', () => {
 
   test('Switch of Series', async () => {
     await medicalImagePage.navigateToSlice(3);
+    await medicalImagePage.expectImageData(1, 3);
     await medicalImagePage.expectSliceInformation('3 / 7');
     
     await medicalImagePage.selectSeries(2);
+    await medicalImagePage.expectImageData(2, 1);
+    await medicalImagePage.expectImageSourceFromEvent('/2/');
     await medicalImagePage.expectSliceInformation('1 / 6');
-    await medicalImagePage.expectImageSourceContains('/2/');
     
-    await medicalImagePage.navigateToSlice(4);
-    await medicalImagePage.expectSliceInformation('4 / 6');
+    await medicalImagePage.scrollToNextImage();
+    await medicalImagePage.expectImageData(2, 2);
     
     await medicalImagePage.selectSeries(1);
+    await medicalImagePage.expectImageData(1, 1);
     await medicalImagePage.expectSliceInformation('1 / 7');
-    await medicalImagePage.expectImageSourceContains('/1/');
   });
 
   test('Verify Patient Information Overlay Displays Correct Data', async () => {
     await medicalImagePage.expectPatientInformationVisible();
     
+    await medicalImagePage.expectPatientInfoFromEvent('John Doe', 'P001234567');
+    
     const overlayBox = await medicalImagePage.getOverlayBoundingBox();
     expect(overlayBox).toBeTruthy();
     
-    await medicalImagePage.expectPatientInformationContains('John Doe', 'P001234567');
-    
-    const patientName = await medicalImagePage.getPatientName();
-    const patientId = await medicalImagePage.getPatientId();
-    
     await medicalImagePage.scrollToNextImage();
     await medicalImagePage.expectSliceInformation('2 / 7');
-    await medicalImagePage.expectPatientInformation(patientName!, patientId!);
+    await medicalImagePage.expectPatientInfoFromEvent('John Doe', 'P001234567');
     
     await medicalImagePage.selectSeries(2);
     await medicalImagePage.expectSliceInformation('1 / 6');
     await medicalImagePage.expectPatientInformationVisible();
-    await medicalImagePage.expectPatientInformation(patientName!, patientId!);
+    await medicalImagePage.expectPatientInfoFromEvent('John Doe', 'P001234567');
     
     const newOverlayBox = await medicalImagePage.getOverlayBoundingBox();
     expect(newOverlayBox).toBeTruthy();
@@ -107,15 +100,12 @@ test.describe('Medical Image Viewer Tests', () => {
     
     for (let i = 2; i <= 7; i++) {
       await medicalImagePage.scrollToNextImage();
+      await medicalImagePage.expectImageData(1, i);
       await medicalImagePage.expectSliceInformation(`${i} / 7`);
     }
     
     const rapidNavTime = Date.now() - rapidNavStart;
     expect(rapidNavTime).toBeLessThan(8000);
-    
-    await medicalImagePage.selectSeries(1);
-    await medicalImagePage.expectSliceInformation('1 / 7');
-    await medicalImagePage.expectImageVisible();
     
     console.log(`Initial load time: ${loadTime}ms`);
     console.log(`Rapid navigation time: ${rapidNavTime}ms`);

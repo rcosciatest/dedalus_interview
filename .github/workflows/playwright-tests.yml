@@ -48,7 +48,6 @@ jobs:
         
     - name: Run Tests
       run: |
-        # Skip if specific browser selected and doesn't match current matrix browser
         if [[ "${{ github.event.inputs.browser }}" != "all" && "${{ github.event.inputs.browser }}" != "" && "${{ github.event.inputs.browser }}" != "${{ matrix.browser }}" ]]; then
           echo "Skipping ${{ matrix.browser }}"
           exit 0
