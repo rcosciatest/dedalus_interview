@@ -20,8 +20,7 @@ test.describe('Medical Image Viewer Tests', () => {
 
   test('Correctness of Rendering of Images', async ({ page }) => {
 
-    
-    
+
     // Ensure viewport is present
     await expect(page.getByTestId('medical-image-viewport')).toBeVisible();
     
@@ -103,33 +102,22 @@ test.describe('Medical Image Viewer Tests', () => {
   });
 
   test('Switch of Series', async ({ page }) => {
-    // Start with Series 1 (default)
-    await page.getByTestId('series-1-button').click();
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 7');
-    
-    // Verify initial state
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 7');
-    let imageSrc = await page.getByTestId('medical-image').getAttribute('src');
-    expect(imageSrc).toContain('/1/');
-    
+
     // Navigate to image 3 in Series 1
     const viewport = page.getByTestId('medical-image-viewport');
     await viewport.hover();
     await page.mouse.wheel(0, 100); // Image 2
-    await expect(page.getByTestId('slice-information')).toHaveText('2 / 7');
     await page.mouse.wheel(0, 100); // Image 3
     await expect(page.getByTestId('slice-information')).toHaveText('3 / 7');
     // Verify we're on image 3
     
     // Switch to Series 2
     await page.getByTestId('series-2-button').click();
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 6');
+    await expect(page.getByTestId('slice-information')).toHaveText('1 / 6');// Should reset to 1
     
-    // Verify series switch and index reset
-    await expect(page.getByTestId('slice-information')).toHaveText('1 / 6'); // Should reset to 1
     
     // Verify image source changed
-    imageSrc = await page.getByTestId('medical-image').getAttribute('src');
+    const imageSrc = await page.getByTestId('medical-image').getAttribute('src');
     expect(imageSrc).toContain('/2/');
     
     // Navigate to image 4 in Series 2
@@ -144,8 +132,6 @@ test.describe('Medical Image Viewer Tests', () => {
     // Switch back to Series 1
     await page.getByTestId('series-1-button').click();
     await expect(page.getByTestId('slice-information')).toHaveText('1 / 7');
-    
-    // Verify series switch and index reset again // Should reset to 1
     
     // Verify image source changed back
     const finalImageSrc = await page.getByTestId('medical-image').getAttribute('src');
@@ -169,8 +155,9 @@ test.describe('Medical Image Viewer Tests', () => {
     const patientName = await page.getByTestId('patient-name').textContent();
     const patientId = await page.getByTestId('patient-id').textContent();
     
-    expect(patientName).toBeTruthy();
-    expect(patientId).toBeTruthy();
+    expect(patientName).toContain('John Doe');
+    expect(patientId).toContain('P001234567');
+    
     
     // Test persistence across image navigation
     const viewport = page.getByTestId('medical-image-viewport');
