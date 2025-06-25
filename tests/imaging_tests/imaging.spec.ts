@@ -49,16 +49,26 @@ test.describe('Imaging Feature', () => {
 
   
   test('Navigation Between Images Using Mouse Scroll', async () => {
+    //Test mouse wheel scrolling functionality for navigating through image stacks
+    //Confirm image index updates correctly.
+    //Verify that the correct images are loaded after the series navigation
     
   });
 
    
   test('Switch of Series', async () => {
-    
+    //Test switching between Series 1 (7 JPEG images) and Series 2 (6 JPEG images)
+    //Validate that image index resets to 1 when switching series
+    //Confirm that the current series information updates in the left panel
+    //Verify that the correct images are loaded for each series
+    //Test that series highlighting (blue selection) updates correctly
+
   });
 
    
   test('Verify Patient Information Overlay Displays Correct Data', async () => {
+    // Validate that patient name and ID are correctly displayed in the bottom-left overlay
+    //Test that patient information persists across series switches
     
   });
 });
