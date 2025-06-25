@@ -19,9 +19,7 @@ test.describe('Medical Image Viewer Tests', () => {
 
 
   test('Correctness of Rendering of Images', async ({ page }) => {
-    // Wait for the page to be fully loaded
-    await page.waitForLoadState('networkidle');
-    
+
     // Dismiss welcome popup if present
     const welcomeButton = page.getByTestId('welcome-popup-accept-button');
     if (await welcomeButton.isVisible()) {
