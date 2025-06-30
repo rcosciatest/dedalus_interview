@@ -1,15 +1,23 @@
-import { test, expect } from '@playwright/test';
+import { test, expect,type BrowserContext } from '@playwright/test';
 import { MedicalImageViewerPage } from '../../common/pom/MedicalImage.page';
 
 test.describe.configure({ mode: 'serial' });
-
+let context: BrowserContext;
 test.describe('Medical Image Viewer Tests', () => {
   let medicalImagePage: MedicalImageViewerPage;
+  
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeAll(async ({ browser }) => {
+    context = await browser.newContext();
+    const page = await context.newPage();
     medicalImagePage = new MedicalImageViewerPage(page);
     await medicalImagePage.navigate();
   });
+  test.afterAll(async () => {
+  await context.close();
+});
+
+
 
   test('Correctness of Rendering of Images', async () => {
     await medicalImagePage.expectViewportVisible();
